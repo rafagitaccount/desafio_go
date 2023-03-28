@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -67,7 +68,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	dolarQuotation := []byte(quotation.USDBRL.Bid)
-	err = storeDatabase(ctx, dolarQuotation)
+	err = storeDatabase(ctx, quotation.USDBRL.Bid)
 	if err != nil {
 		fmt.Println("Database store error: ", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -76,14 +77,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	w.Write(dolarQuotation)
 }
 
-func storeDatabase(ctx context.Context, dolarQuotation []byte) error {
+func storeDatabase(ctx context.Context, dolarQuotation string) error {
 	db, err := sql.Open("mysql", "root:root@tcp(localhost:3306)/goexpert")
 	if err != nil {
 		return err
 	}
 	defer db.Close()
 
-	dolarPrice := float64(dolarQuotation[0]) // TODO: fix convertion.
+	dolarPrice, _ := strconv.ParseFloat(dolarQuotation, 64)
 	quotation := NewQuotation("Dolar", dolarPrice)
 
 	stmt, err := db.Prepare("insert into quotations (id, currency, value) values (?, ?, ?)")
